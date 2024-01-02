@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@aws-cdk/lambda-layer-kubectl-v27": "^2.0.0",
+    "@aws-cdk/lambda-layer-kubectl-v28": "^2.1.0",
     "@types/js-yaml": "^4.0.8",
     "aws-cdk": "^2.103.1",
     "aws-cdk-lib": "^2.103.1",

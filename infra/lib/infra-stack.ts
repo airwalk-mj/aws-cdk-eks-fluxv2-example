@@ -5,7 +5,7 @@ import { aws_eks as eks } from 'aws-cdk-lib';
 import { ClusterAutoscaler } from './addons/cluster-autoscaler';
 import { FluxV2 } from './addons/fluxv2';
 import { AWSLoadBalancerController } from './addons/aws-lbc';
-import { KubectlV27Layer } from '@aws-cdk/lambda-layer-kubectl-v27';
+import { KubectlV28Layer } from '@aws-cdk/lambda-layer-kubectl-v28';
 
 export class InfraStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -58,9 +58,9 @@ export class InfraStack extends Stack {
     const cluster = new eks.Cluster(this, 'Cluster', {
       vpc: vpc,
       role: clusterRole,
-      version: eks.KubernetesVersion.V1_27,
+      version: eks.KubernetesVersion.V1_28,
       defaultCapacity: 0,
-      kubectlLayer: new KubectlV27Layer(this, 'kubectl')
+      kubectlLayer: new KubectlV28Layer(this, 'kubectl')
     });
 
     // Worker node IAM role
