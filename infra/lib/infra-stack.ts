@@ -26,7 +26,7 @@ export class InfraStack extends Stack {
     });
 
     // A VPC, including NAT GWs, IGWs, where we will run our cluster
-    const vpc = new ec2.Vpc(this, 'GREEN-VPC', {
+    const vpc = new ec2.Vpc(this, 'GREEN', {
       natGateways: 0,
       maxAzs: 2,
       enableDnsHostnames: true,
