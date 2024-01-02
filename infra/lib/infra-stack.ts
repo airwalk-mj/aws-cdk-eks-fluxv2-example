@@ -60,7 +60,8 @@ export class InfraStack extends Stack {
       role: clusterRole,
       version: eks.KubernetesVersion.V1_28,
       defaultCapacity: 0,
-      kubectlLayer: new KubectlV28Layer(this, 'kubectl')
+      kubectlLayer: new KubectlV28Layer(this, 'kubectl'),
+      endpointAccess: eks.EndpointAccess.PUBLIC_AND_PRIVATE        // SHOULD BE SET TO PRIVATE !!
     });
 
     // Worker node IAM role
