@@ -5,6 +5,7 @@ import { aws_eks as eks } from 'aws-cdk-lib';
 import { ClusterAutoscaler } from './addons/cluster-autoscaler';
 import { FluxV2 } from './addons/fluxv2';
 import { AWSLoadBalancerController } from './addons/aws-lbc';
+import { KubectlV27Layer } from '@aws-cdk/lambda-layer-kubectl-v27';
 
 export class InfraStack extends Stack {
   constructor(scope: Construct, id: string, props?: StackProps) {
@@ -25,7 +26,24 @@ export class InfraStack extends Stack {
     });
 
     // A VPC, including NAT GWs, IGWs, where we will run our cluster
-    const vpc = new ec2.Vpc(this, 'VPC', {});
+    const vpc = new ec2.Vpc(this, 'GREEN-VPC', {
+      natGateways: 0,
+      maxAzs: 2,
+      enableDnsHostnames: true,
+      enableDnsSupport: true,
+      // deprecated: cidr: '172.0.0.0/26',
+      ipAddresses: ec2.IpAddresses.cidr('172.0.0.0/26'),
+      subnetConfiguration: [
+        {
+          name: 'PUBLIC',
+          subnetType: ec2.SubnetType.PUBLIC
+        },
+        {
+          name: 'PRIVATE_WITH_EGRESS',
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
+        }
+      ]
+    });
 
     // The IAM role that will be used by EKS
     const clusterRole = new iam.Role(this, 'ClusterRole', {
@@ -40,8 +58,9 @@ export class InfraStack extends Stack {
     const cluster = new eks.Cluster(this, 'Cluster', {
       vpc: vpc,
       role: clusterRole,
-      version: eks.KubernetesVersion.V1_19,
-      defaultCapacity: 0
+      version: eks.KubernetesVersion.V1_27,
+      defaultCapacity: 0,
+      kubectlLayer: new KubectlV27Layer(this, 'kubectl')
     });
 
     // Worker node IAM role
@@ -56,12 +75,12 @@ export class InfraStack extends Stack {
     });
 
     // Select the private subnets created in our VPC and place our worker nodes there
-    const privateSubnets = vpc.selectSubnets({
-      subnetType: ec2.SubnetType.PRIVATE_WITH_NAT
-    });
+    //const privateSubnets = vpc.selectSubnets({
+    //  subnetType: ec2.SubnetType.PRIVATE_ISOLATED
+    //}).subnets;
 
     cluster.addNodegroupCapacity('WorkerNodeGroup', {
-      subnets: privateSubnets,
+      //subnets: privateSubnets,
       nodeRole: workerRole,
       minSize: 1,
       maxSize: 20

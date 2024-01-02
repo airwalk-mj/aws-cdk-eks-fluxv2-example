@@ -1,0 +1,6 @@
+{
+  "name": "aws-cdk-eks-fluxv2-example",
+  "lockfileVersion": 3,
+  "requires": true,
+  "packages": {}
+}

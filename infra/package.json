@@ -1,6 +1,7 @@
 {
   "name": "infra",
   "version": "0.1.0",
+  "private": true,
   "bin": {
     "infra": "bin/infra.js"
   },
@@ -19,7 +20,8 @@
     "typescript": "~4.9.5"
   },
   "dependencies": {
-    "aws-cdk-lib": "2.103.1",
+    "aws-cdk": "2.115.0",
+    "aws-cdk-lib": "^2.103.1",
     "@types/js-yaml": "^4.0.8",
     "js-yaml": "^4.1.0",
     "source-map-support": "^0.5.21",
