@@ -29,8 +29,8 @@ export class InfraStack extends Stack {
     const vpc = new ec2.Vpc(this, 'GREEN', {
       natGateways: 0,
       maxAzs: 2,
-      enableDnsHostnames: true,
-      enableDnsSupport: true,
+      // enableDnsHostnames: true,
+      // enableDnsSupport: true,
       // deprecated: cidr: '172.0.0.0/26',
       ipAddresses: ec2.IpAddresses.cidr('172.0.0.0/26'),
       subnetConfiguration: [
@@ -75,15 +75,14 @@ export class InfraStack extends Stack {
     });
 
     // Select the private subnets created in our VPC and place our worker nodes there
-    //const privateSubnets = vpc.selectSubnets({
+    //const isolatedSubnets = vpc.selectSubnets({
     //  subnetType: ec2.SubnetType.PRIVATE_ISOLATED
-    //}).subnets;
+    //});
 
     cluster.addNodegroupCapacity('WorkerNodeGroup', {
-      //subnets: privateSubnets,
       nodeRole: workerRole,
       minSize: 1,
-      maxSize: 20
+      maxSize: 2
     });
 
     // Add our default addons
