@@ -34,16 +34,16 @@ export class InfraStack extends Stack {
       // enableDnsSupport: true,
       // deprecated: cidr: '172.0.0.0/26',
       ipAddresses: ec2.IpAddresses.cidr('172.0.0.0/26'),
-      subnetConfiguration: [
-        {
-          name: 'PUBLIC',
-          subnetType: ec2.SubnetType.PUBLIC
-        },
-        {
-          name: 'PRIVATE_WITH_EGRESS',
-          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
-        }
-      ]
+      //subnetConfiguration: [
+      //  {
+      //    name: 'PUBLIC',
+      //    subnetType: ec2.SubnetType.PUBLIC
+      //  },
+      //  {
+      //    name: 'PRIVATE_WITH_EGRESS',
+      //    subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
+      //  }
+      //]
     });
 
     // The IAM role that will be used by EKS
@@ -77,11 +77,13 @@ export class InfraStack extends Stack {
     });
 
     // Select the private subnets created in our VPC and place our worker nodes there
-    //const isolatedSubnets = vpc.selectSubnets({
-    //  subnetType: ec2.SubnetType.PRIVATE_ISOLATED
-    //});
+    const privateSubnets = vpc.selectSubnets({
+      // subnetType: ec2.SubnetType.PRIVATE_WITH_NAT   // DEPRECATED
+      subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
+    }); 
 
     cluster.addNodegroupCapacity('WorkerNodeGroup', {
+      subnets: privateSubnets,
       nodeRole: workerRole,
       minSize: 1,
       maxSize: 2
