@@ -27,27 +27,57 @@ export class InfraStack extends Stack {
     });
 
     // A VPC, including NAT GWs, IGWs, where we will run our cluster
-    const vpc = new ec2.Vpc(this, 'GREEN', {
-      natGateways: 0,
+    const vpc = new ec2.Vpc(this, 'GREEN-VPC', {
+      natGateways: 1,
       maxAzs: 2,
-      // enableDnsHostnames: true,
-      // enableDnsSupport: true,
+      enableDnsHostnames: true,       // required by private EKS endpoint
+      enableDnsSupport: true,         // required by private EKS endpoint
       // deprecated: cidr: '172.0.0.0/26',
       ipAddresses: ec2.IpAddresses.cidr('172.0.0.0/26'),
-      //subnetConfiguration: [
-      //  {
-      //    name: 'PUBLIC',
-      //    subnetType: ec2.SubnetType.PUBLIC
-      //  },
-      //  {
-      //    name: 'PRIVATE_WITH_EGRESS',
-      //    subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
-      //  }
-      //]
+      subnetConfiguration: [
+        {
+          name: 'GREEN-PUBLIC',
+          subnetType: ec2.SubnetType.PUBLIC,
+        },
+        {
+          name: 'GREEN-PRIVATE_WITH_EGRESS',
+          subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
+        }
+      ],
+      gatewayEndpoints: {
+        S3: {
+          service: ec2.GatewayVpcEndpointAwsService.S3,     
+        },
+      },
+    });
+    
+    // https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_ec2.InterfaceVpcEndpointOptions.html
+    new ec2.InterfaceVpcEndpoint(this, 'ec2.endpoint', {           
+      vpc,
+      service: new ec2.InterfaceVpcEndpointService('com.amazonaws.eu-west-1.ec2', 443),
+      subnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
+      }
+    });
+
+    new ec2.InterfaceVpcEndpoint(this, 'ecr-endpoint', {
+      vpc,
+      service: new ec2.InterfaceVpcEndpointService('com.amazonaws.eu-west-1.ecr.api', 443),
+      subnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
+      }
+    });
+
+    new ec2.InterfaceVpcEndpoint(this, 'eks-endpoint', {
+      vpc,
+      service: new ec2.InterfaceVpcEndpointService('com.amazonaws.eu-west-1.eks', 443),
+      subnets: {
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
+      }
     });
 
     // The IAM role that will be used by EKS
-    const clusterRole = new iam.Role(this, 'ClusterRole', {
+    const clusterRole = new iam.Role(this, 'GREEN-ClusterRole', {
       assumedBy: new iam.ServicePrincipal('eks.amazonaws.com'),
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSClusterPolicy'),
@@ -56,7 +86,7 @@ export class InfraStack extends Stack {
     });
 
     // The EKS cluster, without worker nodes as we'll add them later
-    const cluster = new eks.Cluster(this, 'Cluster', {
+    const cluster = new eks.Cluster(this, 'GREEN-Cluster', {
       vpc: vpc,
       role: clusterRole,
       version: eks.KubernetesVersion.V1_27,
@@ -66,7 +96,7 @@ export class InfraStack extends Stack {
     });
 
     // Worker node IAM role
-    const workerRole = new iam.Role(this, 'WorkerRole', {
+    const workerRole = new iam.Role(this, 'GREEN-WorkerRole', {
       assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonEKSWorkerNodePolicy'),
@@ -82,15 +112,17 @@ export class InfraStack extends Stack {
       subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS
     }); 
 
-    cluster.addNodegroupCapacity('WorkerNodeGroup', {
+    cluster.addNodegroupCapacity('GREEN-WorkerNodeGroup', {
       subnets: privateSubnets,
       nodeRole: workerRole,
       minSize: 1,
-      maxSize: 2
+      maxSize: 2,
+      //amiType: eks.NodegroupAmiType.AL2_ARM_64,
+      amiType: eks.NodegroupAmiType.BOTTLEROCKET_ARM_64
     });
 
     // Add our default addons
-    new ClusterAutoscaler(this, 'ClusterAutoscaler', {
+    new ClusterAutoscaler(this, 'GREEN-ClusterAutoscaler', {
       cluster: cluster
     });
 
